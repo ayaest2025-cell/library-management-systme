@@ -14,7 +14,7 @@ unset($_SESSION['flash']);
 
 $search = trim($_GET['search'] ?? '');
 
-$sql = "SELECT id, title, author, category, created_at FROM books";
+$sql = "SELECT id, title, author, category, cover_image, status, borrower_name, created_at FROM books";
 $params = [];
 $types = "";
 
@@ -69,9 +69,12 @@ $books = $result->fetch_all(MYSQLI_ASSOC);
                     <thead>
                         <tr>
                             <th>#</th>
+                            <th>Cover</th>
                             <th>Title</th>
                             <th>Author</th>
                             <th>Category</th>
+                            <th>Status</th>
+                            <th>Borrower</th>
                             <th>Created At</th>
                             <th>Actions</th>
                         </tr>
@@ -80,9 +83,18 @@ $books = $result->fetch_all(MYSQLI_ASSOC);
                         <?php foreach ($books as $book): ?>
                             <tr>
                                 <td><?php echo htmlspecialchars($book['id']); ?></td>
+                                <td>
+                                    <?php if (!empty($book['cover_image'])): ?>
+                                        <img src="<?php echo htmlspecialchars($book['cover_image']); ?>" alt="Cover" class="book-cover-thumb">
+                                    <?php else: ?>
+                                        <span class="muted-text">No cover</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td><?php echo htmlspecialchars($book['title']); ?></td>
                                 <td><?php echo htmlspecialchars($book['author']); ?></td>
                                 <td><?php echo htmlspecialchars($book['category']); ?></td>
+                                <td><?php echo htmlspecialchars($book['status']); ?></td>
+                                <td><?php echo htmlspecialchars($book['borrower_name'] ?? '—'); ?></td>
                                 <td><?php echo htmlspecialchars($book['created_at']); ?></td>
                                 <td class="actions">
                                     <a href="edit-book.php?id=<?php echo $book['id']; ?>" class="action-link">Edit</a>

@@ -98,6 +98,7 @@ main {
 
 .search-form input,
 .book-form input,
+.book-form select,
 .book-form button,
 .search-form button {
     padding: 10px;
@@ -155,4 +156,57 @@ main {
 .error-message {
     color: #b91c1c;
     font-weight: 600;
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.stat-card {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.stat-card h3 {
+    margin: 0 0 8px;
+    color: #1e293b;
+}
+
+.stat-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #2563eb;
+    margin: 0;
+}
+
+.stat-list {
+    padding-left: 18px;
+    margin: 10px 0 0;
+    color: #475569;
+}
+
+.book-cover-thumb {
+    width: 64px;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+}
+
+.cover-preview {
+    width: 100px;
+    height: 140px;
+    object-fit: cover;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.muted-text {
+    color: #64748b;
+    font-size: 13px;
 }

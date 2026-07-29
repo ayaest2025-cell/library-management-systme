@@ -13,7 +13,7 @@ $message = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
     $id = (int) $_GET['id'];
-    $stmt = $conn->prepare('SELECT id, title, author, category FROM books WHERE id = ?');
+    $stmt = $conn->prepare('SELECT id, title, author, category, cover_image, status, borrower_name FROM books WHERE id = ?');
     $stmt->bind_param('i', $id);
     $stmt->execute();
     $book = $stmt->get_result()->fetch_assoc();
@@ -28,15 +28,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
     $title = trim($_POST['title'] ?? '');
     $author = trim($_POST['author'] ?? '');
     $category = trim($_POST['category'] ?? '');
+    $status = trim($_POST['status'] ?? 'Available');
+    $borrowerName = trim($_POST['borrower_name'] ?? '');
 
     if ($id > 0 && $title !== '' && $author !== '' && $category !== '') {
-        $stmt = $conn->prepare('UPDATE books SET title = ?, author = ?, category = ? WHERE id = ?');
-        $stmt->bind_param('sssi', $title, $author, $category, $id);
-        $stmt->execute();
+        if ($status === 'Borrowed' && $borrowerName === '') {
+            $message = 'Borrower details are required when the book is marked as borrowed.';
+        } else {
+            $stmt = $conn->prepare('SELECT cover_image FROM books WHERE id = ?');
+            $stmt->bind_param('i', $id);
+            $stmt->execute();
+            $currentBook = $stmt->get_result()->fetch_assoc();
+            $coverImage = $currentBook['cover_image'] ?? null;
 
-        $_SESSION['flash'] = ['type' => 'success', 'message' => 'Book updated successfully.'];
-        header('Location: books.php');
-        exit();
+            if (isset($_FILES['cover_image']) && $_FILES['cover_image']['error'] === UPLOAD_ERR_OK) {
+                $uploadDir = __DIR__ . '/uploads';
+                if (!is_dir($uploadDir)) {
+                    mkdir($uploadDir, 0755, true);
+                }
+
+                $allowedExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+                $extension = strtolower(pathinfo($_FILES['cover_image']['name'], PATHINFO_EXTENSION));
+
+                if (!in_array($extension, $allowedExtensions, true)) {
+                    $message = 'Only JPG, PNG, GIF, and WEBP images are allowed.';
+                } else {
+                    $fileName = uniqid('cover_', true) . '.' . $extension;
+                    $targetPath = $uploadDir . '/' . $fileName;
+
+                    if (move_uploaded_file($_FILES['cover_image']['tmp_name'], $targetPath)) {
+                        $coverImage = 'uploads/' . $fileName;
+                    } else {
+                        $message = 'Unable to upload the cover image.';
+                    }
+                }
+            }
+
+            if ($message === '') {
+                if ($status === 'Available') {
+                    $borrowerName = '';
+                    $borrowedAt = null;
+                } else {
+                    $borrowedAt = date('Y-m-d H:i:s');
+                }
+
+                $stmt = $conn->prepare('UPDATE books SET title = ?, author = ?, category = ?, cover_image = ?, status = ?, borrower_name = ?, borrowed_at = ? WHERE id = ?');
+                $stmt->bind_param('sssssssi', $title, $author, $category, $coverImage, $status, $borrowerName, $borrowedAt, $id);
+                $stmt->execute();
+
+                $_SESSION['flash'] = ['type' => 'success', 'message' => 'Book updated successfully.'];
+                header('Location: books.php');
+                exit();
+            }
+        }
     } else {
         $message = 'Please fill in all fields.';
     }
@@ -62,7 +106,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
                 <p class="error-message"><?php echo htmlspecialchars($message); ?></p>
             <?php endif; ?>
 
-            <form method="post" action="edit-book.php" class="book-form">
+            <form method="post" action="edit-book.php" enctype="multipart/form-data" class="book-form">
                 <input type="hidden" name="id" value="<?php echo (int) $book['id']; ?>">
 
                 <label for="title">Title</label>
@@ -73,6 +117,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
 
                 <label for="category">Category</label>
                 <input type="text" id="category" name="category" value="<?php echo htmlspecialchars($book['category']); ?>" required>
+
+                <label for="cover_image">Cover Image</label>
+                <input type="file" id="cover_image" name="cover_image" accept="image/*">
+
+                <?php if (!empty($book['cover_image'])): ?>
+                    <img src="<?php echo htmlspecialchars($book['cover_image']); ?>" alt="Current cover" class="cover-preview">
+                <?php endif; ?>
+
+                <label for="status">Status</label>
+                <select id="status" name="status">
+                    <option value="Available" <?php echo ($book['status'] === 'Available') ? 'selected' : ''; ?>>Available</option>
+                    <option value="Borrowed" <?php echo ($book['status'] === 'Borrowed') ? 'selected' : ''; ?>>Borrowed</option>
+                </select>
+
+                <label for="borrower_name">Borrower Name</label>
+                <input type="text" id="borrower_name" name="borrower_name" value="<?php echo htmlspecialchars($book['borrower_name'] ?? ''); ?>" placeholder="Required when borrowed">
 
                 <button type="submit">Save Changes</button>
             </form>
