@@ -53,6 +53,17 @@ function initializeSchema(PDO $pdo): void
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
+    $pdo->exec("CREATE TABLE IF NOT EXISTS members (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        member_code VARCHAR(50) NOT NULL UNIQUE,
+        full_name VARCHAR(150) NOT NULL,
+        email VARCHAR(150) DEFAULT NULL,
+        phone VARCHAR(30) DEFAULT NULL,
+        address VARCHAR(255) DEFAULT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Active',
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
     $pdo->exec("CREATE TABLE IF NOT EXISTS books (
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(150) NOT NULL,

@@ -15,6 +15,7 @@ $conn->select_db($dbname);
 
 ensureUsersTable($conn);
 ensureBooksTable($conn);
+ensureMembersTable($conn);
 ensureDefaultAdmin($conn);
 
 function ensureUsersTable(mysqli $conn): void
@@ -81,6 +82,36 @@ function ensureBooksTable(mysqli $conn): void
     foreach ($columns as $column => $definition) {
         if (!columnExists($conn, 'books', $column)) {
             $conn->query("ALTER TABLE books ADD COLUMN $column $definition");
+        }
+    }
+}
+
+function ensureMembersTable(mysqli $conn): void
+{
+    $conn->query("CREATE TABLE IF NOT EXISTS members (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        member_code VARCHAR(50) NOT NULL UNIQUE,
+        full_name VARCHAR(150) NOT NULL,
+        email VARCHAR(150) DEFAULT NULL,
+        phone VARCHAR(30) DEFAULT NULL,
+        address VARCHAR(255) DEFAULT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Active',
+        joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    $columns = [
+        'member_code' => "VARCHAR(50) NOT NULL UNIQUE",
+        'full_name' => 'VARCHAR(150) NOT NULL',
+        'email' => 'VARCHAR(150) DEFAULT NULL',
+        'phone' => 'VARCHAR(30) DEFAULT NULL',
+        'address' => 'VARCHAR(255) DEFAULT NULL',
+        'status' => "VARCHAR(20) NOT NULL DEFAULT 'Active'",
+        'joined_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    ];
+
+    foreach ($columns as $column => $definition) {
+        if (!columnExists($conn, 'members', $column)) {
+            $conn->query("ALTER TABLE members ADD COLUMN $column $definition");
         }
     }
 }
