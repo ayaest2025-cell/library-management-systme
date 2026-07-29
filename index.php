@@ -7,7 +7,7 @@ $pageTitle = "Library Management System";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?></title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
@@ -18,7 +18,7 @@ $pageTitle = "Library Management System";
     <nav>
         <a href="index.php">Home</a>
         <a href="#">Books</a>
-        <a href="#">Add Book</a>
+        <a href="add-book.php">Add Book</a>
     </nav>
 
     <main>
