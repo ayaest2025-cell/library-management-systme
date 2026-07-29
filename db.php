@@ -16,6 +16,7 @@ $conn->select_db($dbname);
 ensureUsersTable($conn);
 ensureBooksTable($conn);
 ensureMembersTable($conn);
+ensureCategoriesTable($conn);
 ensureDefaultAdmin($conn);
 
 function ensureUsersTable(mysqli $conn): void
@@ -112,6 +113,56 @@ function ensureMembersTable(mysqli $conn): void
     foreach ($columns as $column => $definition) {
         if (!columnExists($conn, 'members', $column)) {
             $conn->query("ALTER TABLE members ADD COLUMN $column $definition");
+        }
+    }
+}
+
+function ensureCategoriesTable(mysqli $conn): void
+{
+    $conn->query("CREATE TABLE IF NOT EXISTS categories (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(100) NOT NULL UNIQUE,
+        description VARCHAR(255) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    $columns = [
+        'name' => 'VARCHAR(100) NOT NULL UNIQUE',
+        'description' => 'VARCHAR(255) DEFAULT NULL',
+        'created_at' => 'TIMESTAMP DEFAULT CURRENT_TIMESTAMP',
+    ];
+
+    foreach ($columns as $column => $definition) {
+        if (!columnExists($conn, 'categories', $column)) {
+            $conn->query("ALTER TABLE categories ADD COLUMN $column $definition");
+        }
+    }
+
+    seedCategoriesFromBooks($conn);
+}
+
+function seedCategoriesFromBooks(mysqli $conn): void
+{
+    $result = $conn->query("SELECT DISTINCT TRIM(category) AS category_name FROM books WHERE TRIM(category) <> ''");
+    if (!$result) {
+        return;
+    }
+
+    while ($row = $result->fetch_assoc()) {
+        $name = trim((string) $row['category_name']);
+        if ($name === '') {
+            continue;
+        }
+
+        $check = $conn->prepare('SELECT id FROM categories WHERE LOWER(name) = LOWER(?) LIMIT 1');
+        $check->bind_param('s', $name);
+        $check->execute();
+        $checkResult = $check->get_result();
+
+        if ($checkResult->num_rows === 0) {
+            $insert = $conn->prepare('INSERT INTO categories (name) VALUES (?)');
+            $insert->bind_param('s', $name);
+            $insert->execute();
         }
     }
 }
