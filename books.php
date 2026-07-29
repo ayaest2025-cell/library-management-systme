@@ -6,27 +6,34 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+include('db.php');
+
 $pageTitle = "Books";
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
 
-$servername = "localhost";
-$dbUsername = "root";
-$dbPassword = "";
-$dbName = "library_db";
+$search = trim($_GET['search'] ?? '');
 
-mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
+$sql = "SELECT id, title, author, category, created_at FROM books";
+$params = [];
+$types = "";
 
-try {
-    $conn = new mysqli($servername, $dbUsername, $dbPassword, $dbName);
-    if ($conn->connect_error) {
-        throw new Exception("Connection failed: " . $conn->connect_error);
-    }
-
-    $result = $conn->query("SELECT id, title, author, category, created_at FROM books ORDER BY id DESC");
-    $books = $result->fetch_all(MYSQLI_ASSOC);
-} catch (Exception $e) {
-    $books = [];
-    $errorMessage = "Database error: " . $e->getMessage();
+if ($search !== '') {
+    $sql .= " WHERE title LIKE ? OR author LIKE ?";
+    $like = "%{$search}%";
+    $params = [$like, $like];
+    $types = "ss";
 }
+
+$sql .= " ORDER BY id DESC";
+
+$stmt = $conn->prepare($sql);
+if ($params !== []) {
+    $stmt->bind_param($types, ...$params);
+}
+$stmt->execute();
+$result = $stmt->get_result();
+$books = $result->fetch_all(MYSQLI_ASSOC);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -35,58 +42,30 @@ try {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?></title>
     <link rel="stylesheet" href="styles.css">
-    <style>
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-            background: #fff;
-        }
-
-        th, td {
-            border: 1px solid #ddd;
-            padding: 10px;
-            text-align: left;
-        }
-
-        th {
-            background: #f2f2f2;
-        }
-
-        .actions a {
-            margin-right: 8px;
-            text-decoration: none;
-            color: #007bff;
-        }
-
-        .actions a:hover {
-            text-decoration: underline;
-        }
-    </style>
 </head>
 <body>
+    <?php include 'includes/nav.php'; ?>
+
     <header>
         <h1>Library Management System</h1>
         <p>Browse all books in the collection.</p>
     </header>
 
-    <nav>
-        <a href="index.php">Home</a>
-        <a href="books.php">Books</a>
-        <a href="add-book.php">Add Book</a>
-        <a href="logout.php">Logout</a>
-    </nav>
-
     <main>
         <section class="welcome">
             <h2>All Books</h2>
 
-            <?php if (!empty($errorMessage)): ?>
-                <p><?php echo htmlspecialchars($errorMessage); ?></p>
+            <?php if ($flash): ?>
+                <div class="flash <?php echo htmlspecialchars($flash['type']); ?>"><?php echo htmlspecialchars($flash['message']); ?></div>
             <?php endif; ?>
 
+            <form method="get" action="books.php" class="search-form">
+                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by title or author">
+                <button type="submit">Search</button>
+            </form>
+
             <?php if (!empty($books)): ?>
-                <table>
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th>#</th>
@@ -106,8 +85,8 @@ try {
                                 <td><?php echo htmlspecialchars($book['category']); ?></td>
                                 <td><?php echo htmlspecialchars($book['created_at']); ?></td>
                                 <td class="actions">
-                                    <a href="edit-book.php?id=<?php echo $book['id']; ?>">Edit</a>
-                                    <a href="delete-book.php?id=<?php echo $book['id']; ?>" onclick="return confirm('Delete this book?')">Delete</a>
+                                    <a href="edit-book.php?id=<?php echo $book['id']; ?>" class="action-link">Edit</a>
+                                    <a href="delete-book.php?id=<?php echo $book['id']; ?>" class="action-link danger" onclick="return confirm('Delete this book?')">Delete</a>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

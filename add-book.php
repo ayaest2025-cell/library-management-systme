@@ -6,8 +6,12 @@ if (!isset($_SESSION['user_id'])) {
     exit();
 }
 
+include('db.php');
+
 $pageTitle = "Add Book";
-$message = "";
+$message = '';
+$flash = $_SESSION['flash'] ?? null;
+unset($_SESSION['flash']);
 
 $servername = "localhost";
 $dbUsername = "root";
@@ -43,7 +47,9 @@ try {
             $stmt = $conn->prepare("INSERT INTO books (title, author, category) VALUES (?, ?, ?)");
             $stmt->bind_param("sss", $title, $author, $category);
             $stmt->execute();
-            $message = "Book added successfully.";
+            $_SESSION['flash'] = ['type' => 'success', 'message' => 'Book added successfully.'];
+            header('Location: books.php');
+            exit();
         } else {
             $message = "Please fill in all fields.";
         }
@@ -61,24 +67,23 @@ try {
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <?php include 'includes/nav.php'; ?>
+
     <header>
         <h1>Library Management System</h1>
         <p>Add a new book to the library database.</p>
     </header>
-
-    <nav>
-        <a href="index.php">Home</a>
-        <a href="books.php">Books</a>
-        <a href="add-book.php">Add Book</a>
-        <a href="logout.php">Logout</a>
-    </nav>
 
     <main>
         <section class="welcome">
             <h2>Add New Book</h2>
 
             <?php if ($message !== ''): ?>
-                <p><?php echo htmlspecialchars($message); ?></p>
+                <p class="error-message"><?php echo htmlspecialchars($message); ?></p>
+            <?php endif; ?>
+
+            <?php if ($flash): ?>
+                <div class="flash <?php echo htmlspecialchars($flash['type']); ?>"><?php echo htmlspecialchars($flash['message']); ?></div>
             <?php endif; ?>
 
             <form method="post" action="add-book.php">

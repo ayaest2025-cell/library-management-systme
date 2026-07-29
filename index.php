@@ -14,20 +14,15 @@ $pageTitle = "Library Management System";
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo $pageTitle; ?></title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <?php include 'includes/nav.php'; ?>
+
     <header>
         <h1>Library Management System</h1>
         <p>Manage books, categories, and members in one place.</p>
     </header>
-
-    <nav>
-        <a href="index.php">Home</a>
-        <a href="books.php">Books</a>
-        <a href="add-book.php">Add Book</a>
-        <a href="logout.php">Logout</a>
-    </nav>
 
     <main>
         <section class="welcome">
