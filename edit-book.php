@@ -100,7 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id'])) {
 <body>
     <?php include 'includes/nav.php'; ?>
     <main>
-        <section class="welcome form-card">
+        <section class="welcome form-card-container">
             <h2>Edit Book</h2>
             <?php if ($message !== ''): ?>
                 <p class="error-message"><?php echo htmlspecialchars($message); ?></p>

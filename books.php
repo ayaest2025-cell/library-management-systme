@@ -52,7 +52,7 @@ $books = $result->fetch_all(MYSQLI_ASSOC);
     </header>
 
     <main>
-        <section class="welcome">
+        <section class="welcome main-container">
             <h2>All Books</h2>
 
             <?php if ($flash): ?>

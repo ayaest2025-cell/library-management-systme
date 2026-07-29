@@ -32,7 +32,7 @@ $recentBooks = $conn->query('SELECT title, created_at FROM books ORDER BY create
     </header>
 
     <main>
-        <section class="welcome">
+        <section class="welcome main-container">
             <h2>Welcome!</h2>
             <p>Welcome to the library management homepage. You can browse books and add new records with ease.</p>
 
