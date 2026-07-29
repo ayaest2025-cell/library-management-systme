@@ -68,9 +68,15 @@ main {
 
 .welcome {
     background-color: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 24px 28px;
+    border-radius: 12px;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    max-width: 600px;
+    margin: 30px auto;
+}
+
+.form-card {
+    width: 100%;
 }
 
 .flash {
@@ -101,9 +107,11 @@ main {
 .book-form select,
 .book-form button,
 .search-form button {
-    padding: 10px;
+    padding: 12px 14px;
     border: 1px solid #cbd5e1;
-    border-radius: 8px;
+    border-radius: 10px;
+    font-size: 15px;
+    box-sizing: border-box;
 }
 
 .search-form button,
@@ -149,8 +157,24 @@ main {
 .book-form {
     display: flex;
     flex-direction: column;
-    gap: 10px;
-    max-width: 480px;
+    gap: 12px;
+    width: 100%;
+}
+
+.book-form label {
+    font-weight: 600;
+    color: #374151;
+}
+
+.book-form input,
+.book-form select {
+    width: 100%;
+}
+
+.book-form button {
+    width: 100%;
+    margin-top: 6px;
+    font-weight: 600;
 }
 
 .error-message {

@@ -86,7 +86,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </header>
 
     <main>
-        <section class="welcome">
+        <section class="welcome form-card">
             <h2>Add New Book</h2>
 
             <?php if ($message !== ''): ?>
