@@ -1,4 +1,11 @@
 <?php
+session_start();
+
+if (!isset($_SESSION['user_id'])) {
+    header('Location: login.php');
+    exit();
+}
+
 $pageTitle = "Library Management System";
 ?>
 <!DOCTYPE html>
@@ -19,6 +26,7 @@ $pageTitle = "Library Management System";
         <a href="index.php">Home</a>
         <a href="books.php">Books</a>
         <a href="add-book.php">Add Book</a>
+        <a href="logout.php">Logout</a>
     </nav>
 
     <main>

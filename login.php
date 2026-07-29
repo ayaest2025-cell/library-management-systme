@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $user = $result->fetch_assoc();
             $storedPassword = $user['password'];
 
-            if (password_verify($password, $storedPassword) || $password === $storedPassword) {
+            if ($password === $storedPassword) {
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['user_name'] = $user['name'];
 
