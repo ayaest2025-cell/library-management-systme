@@ -17,7 +17,7 @@ $pageTitle = "Library Management System";
 
     <nav>
         <a href="index.php">Home</a>
-        <a href="#">Books</a>
+        <a href="books.php">Books</a>
         <a href="add-book.php">Add Book</a>
     </nav>
 
