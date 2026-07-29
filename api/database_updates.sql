@@ -65,6 +65,19 @@ CREATE TABLE IF NOT EXISTS books (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+CREATE TABLE IF NOT EXISTS borrow_transactions (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    member_id INT NOT NULL,
+    book_id INT NOT NULL,
+    borrow_date DATE NOT NULL,
+    due_date DATE NOT NULL,
+    return_date DATE DEFAULT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'Borrowed',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+    FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+);
+
 INSERT INTO users (name, full_name, email, password, password_hash, role)
 SELECT 'System Administrator', 'System Administrator', 'admin@gmail.com', 'admin123', 'admin123', 'admin'
 WHERE NOT EXISTS (

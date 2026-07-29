@@ -17,6 +17,7 @@ ensureUsersTable($conn);
 ensureBooksTable($conn);
 ensureMembersTable($conn);
 ensureCategoriesTable($conn);
+ensureBorrowTransactionsTable($conn);
 ensureDefaultAdmin($conn);
 
 function ensureUsersTable(mysqli $conn): void
@@ -180,6 +181,48 @@ function seedCategoriesFromBooks(mysqli $conn): void
             $insert->bind_param('s', $name);
             $insert->execute();
         }
+    }
+}
+
+function ensureBorrowTransactionsTable(mysqli $conn): void
+{
+    $conn->query("CREATE TABLE IF NOT EXISTS borrow_transactions (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        member_id INT NOT NULL,
+        book_id INT NOT NULL,
+        borrow_date DATE NOT NULL,
+        due_date DATE NOT NULL,
+        return_date DATE DEFAULT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Borrowed',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE,
+        FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE
+    )");
+
+    $columns = [
+        'member_id' => 'INT NOT NULL',
+        'book_id' => 'INT NOT NULL',
+        'borrow_date' => 'DATE NOT NULL',
+        'due_date' => 'DATE NOT NULL',
+        'return_date' => 'DATE DEFAULT NULL',
+        'status' => "VARCHAR(20) NOT NULL DEFAULT 'Borrowed'",
+    ];
+
+    foreach ($columns as $column => $definition) {
+        if (!columnExists($conn, 'borrow_transactions', $column)) {
+            $conn->query("ALTER TABLE borrow_transactions ADD COLUMN $column $definition");
+        }
+    }
+
+    // Add foreign keys if they don't exist
+    $fkCheck1 = $conn->query("SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'borrow_transactions' AND COLUMN_NAME = 'member_id' AND REFERENCED_TABLE_NAME IS NOT NULL");
+    if ($fkCheck1 && $fkCheck1->num_rows === 0) {
+        $conn->query("ALTER TABLE borrow_transactions ADD FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE");
+    }
+
+    $fkCheck2 = $conn->query("SELECT CONSTRAINT_NAME FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'borrow_transactions' AND COLUMN_NAME = 'book_id' AND REFERENCED_TABLE_NAME IS NOT NULL");
+    if ($fkCheck2 && $fkCheck2->num_rows === 0) {
+        $conn->query("ALTER TABLE borrow_transactions ADD FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE");
     }
 }
 
