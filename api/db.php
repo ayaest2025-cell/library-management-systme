@@ -80,7 +80,7 @@ function ensureDefaultAdmin(PDO $pdo): void
         return;
     }
 
-    $hash = password_hash('admin123', PASSWORD_BCRYPT);
+    $hash = password_hash('password123', PASSWORD_BCRYPT);
     $stmt = $pdo->prepare('INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)');
     $stmt->execute(['System Administrator', 'admin@example.com', $hash, 'admin']);
 }

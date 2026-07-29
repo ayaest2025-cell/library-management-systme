@@ -43,8 +43,15 @@ function getRequestPath(): string
     $path = parse_url($path, PHP_URL_PATH) ?? '/';
     $path = trim($path, '/');
 
-    if (str_starts_with($path, 'api/')) {
-        return substr($path, 4);
+    $segments = explode('/', $path);
+    $apiIndex = array_search('api', $segments, true);
+
+    if ($apiIndex !== false) {
+        $tail = array_slice($segments, $apiIndex + 1);
+        if (($tail[0] ?? '') === 'index.php') {
+            $tail = array_slice($tail, 1);
+        }
+        return implode('/', $tail);
     }
 
     return $path;

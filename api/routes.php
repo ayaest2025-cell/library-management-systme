@@ -29,6 +29,11 @@ function handleRoute(string $path, string $method): void
 {
     $pdo = getPdo();
 
+    if ($path === '' || $path === '/') {
+        sendJson(['success' => true, 'message' => 'API is running.'], 200);
+        return;
+    }
+
     if ($path === 'auth/login' && $method === 'POST') {
         $body = readJsonBody();
         $email = trim($body['email'] ?? '');
