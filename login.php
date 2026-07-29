@@ -16,14 +16,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($email === '' || $password === '') {
         $error = 'Please enter both email and password.';
     } else {
-        $stmt = $conn->prepare('SELECT id, name, email, password FROM users WHERE email = ? LIMIT 1');
-        $stmt->bind_param('s', $email);
-        $stmt->execute();
-        $result = $stmt->get_result();
+        $user = getUserByEmail($conn, $email);
 
-        if ($result->num_rows === 1) {
-            $user = $result->fetch_assoc();
-            $storedPassword = $user['password'];
+        if ($user !== null) {
+            $storedPassword = $user['password'] ?? $user['password_hash'] ?? null;
             $passwordMatch = false;
 
             if ($storedPassword !== null && $storedPassword !== '') {
@@ -36,16 +32,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($passwordMatch) {
                 $_SESSION['user_id'] = $user['id'];
-                $_SESSION['user_name'] = $user['name'];
+                $_SESSION['user_name'] = $user['name'] ?? $user['full_name'] ?? $user['email'];
 
                 header('Location: index.php');
                 exit();
-            } else {
-                $error = 'Invalid email or password.';
             }
-        } else {
-            $error = 'Invalid email or password.';
         }
+
+        $error = 'Invalid email or password.';
     }
 }
 ?>

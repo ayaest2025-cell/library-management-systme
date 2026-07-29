@@ -25,6 +25,11 @@ function calculateFine(?string $returnDate, string $dueDate): float
     return round($daysLate * 2.0, 2);
 }
 
+function calculateDueDate(int $days): string
+{
+    return date('Y-m-d H:i:s', strtotime('+' . max(1, $days) . ' days'));
+}
+
 function handleRoute(string $path, string $method): void
 {
     $pdo = getPdo();
@@ -51,6 +56,46 @@ function handleRoute(string $path, string $method): void
         return;
     }
 
+    if ($path === 'user/profile' && $method === 'GET') {
+        $user = authenticate(['admin', 'borrower']);
+        sendJson(['success' => true, 'data' => getUserProfile((int) $user['sub'])]);
+        return;
+    }
+
+    if ($path === 'user/profile' && $method === 'PUT') {
+        $user = authenticate(['admin', 'borrower']);
+        $body = readJsonBody();
+        sendJson(['success' => true, 'data' => updateUserProfile((int) $user['sub'], $body)]);
+        return;
+    }
+
+    if ($path === 'books' && $method === 'GET') {
+        authenticate(['admin', 'borrower']);
+        $stmt = $pdo->query('SELECT id, title, author, category, available_copies, isbn, created_at FROM books ORDER BY id DESC');
+        sendJson(['success' => true, 'data' => $stmt->fetchAll()]);
+        return;
+    }
+
+    if ($path === 'books/add' && $method === 'POST') {
+        authenticate(['admin']);
+        $body = readJsonBody();
+        $title = trim((string) ($body['title'] ?? ''));
+        $author = trim((string) ($body['author'] ?? ''));
+        $category = trim((string) ($body['category'] ?? ''));
+        $availableCopies = max(0, (int) ($body['available_copies'] ?? 1));
+        $isbn = trim((string) ($body['isbn'] ?? ''));
+
+        if ($title === '' || $author === '' || $category === '') {
+            throw new ApiException('title, author, and category are required.', 400);
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO books (title, author, category, available_copies, isbn) VALUES (?, ?, ?, ?, ?)');
+        $stmt->execute([$title, $author, $category, $availableCopies, $isbn]);
+
+        sendJson(['success' => true, 'message' => 'Book added successfully.', 'data' => ['id' => (int) $pdo->lastInsertId()]], 201);
+        return;
+    }
+
     if ($path === 'borrow/request' && $method === 'POST') {
         $user = authenticate(['borrower']);
         $body = readJsonBody();
@@ -71,7 +116,7 @@ function handleRoute(string $path, string $method): void
             throw new ApiException('Item is not currently available for borrowing.', 409);
         }
 
-        $dueDate = date('Y-m-d H:i:s', strtotime('+' . $dueDays . ' days'));
+        $dueDate = calculateDueDate($dueDays);
         $stmt = $pdo->prepare('INSERT INTO borrow_transactions (user_id, item_id, due_date, status) VALUES (?, ?, ?, ?)');
         $stmt->execute([(int) $user['sub'], $itemId, $dueDate, 'requested']);
 

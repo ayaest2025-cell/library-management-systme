@@ -1,0 +1,46 @@
+CREATE DATABASE IF NOT EXISTS library_management_system;
+USE library_management_system;
+
+CREATE TABLE IF NOT EXISTS users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(150) DEFAULT NULL,
+    full_name VARCHAR(150) DEFAULT NULL,
+    email VARCHAR(150) NOT NULL UNIQUE,
+    password VARCHAR(255) DEFAULT NULL,
+    password_hash VARCHAR(255) DEFAULT NULL,
+    role VARCHAR(20) NOT NULL DEFAULT 'borrower',
+    first_name VARCHAR(100) DEFAULT NULL,
+    last_name VARCHAR(100) DEFAULT NULL,
+    phone VARCHAR(30) DEFAULT NULL,
+    address VARCHAR(255) DEFAULT NULL,
+    profile_image VARCHAR(255) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+ALTER TABLE users
+    ADD COLUMN IF NOT EXISTS name VARCHAR(150) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS full_name VARCHAR(150) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS password VARCHAR(255) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS password_hash VARCHAR(255) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'borrower',
+    ADD COLUMN IF NOT EXISTS first_name VARCHAR(100) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS last_name VARCHAR(100) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS phone VARCHAR(30) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS address VARCHAR(255) DEFAULT NULL,
+    ADD COLUMN IF NOT EXISTS profile_image VARCHAR(255) DEFAULT NULL;
+
+CREATE TABLE IF NOT EXISTS books (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    title VARCHAR(150) NOT NULL,
+    author VARCHAR(150) NOT NULL,
+    category VARCHAR(100) NOT NULL,
+    available_copies INT NOT NULL DEFAULT 1,
+    isbn VARCHAR(100) DEFAULT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+INSERT INTO users (name, full_name, email, password, password_hash, role)
+SELECT 'System Administrator', 'System Administrator', 'admin@gmail.com', 'admin123', 'admin123', 'admin'
+WHERE NOT EXISTS (
+    SELECT 1 FROM users WHERE email = 'admin@gmail.com'
+);

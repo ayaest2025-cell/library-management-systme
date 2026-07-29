@@ -14,6 +14,7 @@ $totalBooks = $conn->query('SELECT COUNT(*) AS total_books FROM books')->fetch_a
 $totalCategories = $conn->query('SELECT COUNT(DISTINCT category) AS total_categories FROM books')->fetch_assoc()['total_categories'];
 $recentlyAdded = $conn->query('SELECT COUNT(*) AS recently_added FROM books WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)')->fetch_assoc()['recently_added'];
 $recentBooks = $conn->query('SELECT title, created_at FROM books ORDER BY created_at DESC LIMIT 3')->fetch_all(MYSQLI_ASSOC);
+$activeLoans = $conn->query('SELECT COUNT(*) AS total_active_loans FROM books WHERE status = "Borrowed"')->fetch_assoc()['total_active_loans'];
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -59,6 +60,11 @@ $recentBooks = $conn->query('SELECT title, created_at FROM books ORDER BY create
                             <li>No recent books yet.</li>
                         <?php endif; ?>
                     </ul>
+                </article>
+
+                <article class="stat-card">
+                    <h3>Active Loans</h3>
+                    <p class="stat-value"><?php echo (int) $activeLoans; ?></p>
                 </article>
             </div>
         </section>

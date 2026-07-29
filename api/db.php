@@ -30,17 +30,36 @@ function initializeSchema(PDO $pdo): void
 {
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
-        full_name VARCHAR(150) NOT NULL,
+        name VARCHAR(150) DEFAULT NULL,
+        full_name VARCHAR(150) DEFAULT NULL,
         email VARCHAR(150) NOT NULL UNIQUE,
-        password_hash VARCHAR(255) NOT NULL,
+        password VARCHAR(255) DEFAULT NULL,
+        password_hash VARCHAR(255) DEFAULT NULL,
         role VARCHAR(20) NOT NULL DEFAULT 'borrower',
+        first_name VARCHAR(100) DEFAULT NULL,
+        last_name VARCHAR(100) DEFAULT NULL,
+        phone VARCHAR(30) DEFAULT NULL,
+        address VARCHAR(255) DEFAULT NULL,
+        profile_image VARCHAR(255) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
+
+    $pdo->exec("ALTER TABLE users MODIFY COLUMN email VARCHAR(150) NOT NULL");
 
     $pdo->exec("CREATE TABLE IF NOT EXISTS categories (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(100) NOT NULL UNIQUE,
         description VARCHAR(255) DEFAULT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )");
+
+    $pdo->exec("CREATE TABLE IF NOT EXISTS books (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        title VARCHAR(150) NOT NULL,
+        author VARCHAR(150) NOT NULL,
+        category VARCHAR(100) NOT NULL,
+        available_copies INT NOT NULL DEFAULT 1,
+        isbn VARCHAR(100) DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 
@@ -73,14 +92,20 @@ function initializeSchema(PDO $pdo): void
 
 function ensureDefaultAdmin(PDO $pdo): void
 {
+    $email = 'admin@gmail.com';
+    $fullName = 'System Administrator';
+    $plainPassword = 'admin123';
+    $hashedPassword = password_hash($plainPassword, PASSWORD_DEFAULT);
+
     $stmt = $pdo->prepare('SELECT id FROM users WHERE email = ? LIMIT 1');
-    $stmt->execute(['admin@example.com']);
+    $stmt->execute([$email]);
 
     if ($stmt->fetch()) {
+        $updateStmt = $pdo->prepare('UPDATE users SET full_name = ?, password = ?, password_hash = ?, role = ? WHERE email = ?');
+        $updateStmt->execute([$fullName, $hashedPassword, $hashedPassword, 'admin', $email]);
         return;
     }
 
-    $hash = password_hash('password123', PASSWORD_BCRYPT);
-    $stmt = $pdo->prepare('INSERT INTO users (full_name, email, password_hash, role) VALUES (?, ?, ?, ?)');
-    $stmt->execute(['System Administrator', 'admin@example.com', $hash, 'admin']);
+    $stmt = $pdo->prepare('INSERT INTO users (name, full_name, email, password, password_hash, role) VALUES (?, ?, ?, ?, ?, ?)');
+    $stmt->execute([$fullName, $fullName, $email, $hashedPassword, $hashedPassword, 'admin']);
 }

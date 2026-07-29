@@ -9,6 +9,7 @@ if (session_status() === PHP_SESSION_NONE) {
         <a href="index.php">Home</a>
         <a href="books.php">Books</a>
         <a href="add-book.php">Add Book</a>
+        <a href="profile.php">Profile</a>
         <span class="user-pill">Hello, <?php echo htmlspecialchars($_SESSION['user_name'] ?? 'User'); ?></span>
         <a href="logout.php" class="logout-btn">Logout</a>
     </div>

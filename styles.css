@@ -239,3 +239,28 @@ main {
     color: #64748b;
     font-size: 13px;
 }
+
+.loan-panel {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin: 16px 0 20px;
+}
+
+.loan-panel h3 {
+    margin-top: 0;
+}
+
+.loan-panel ul {
+    margin: 0;
+    padding-left: 18px;
+}
+
+.loan-panel li {
+    margin-bottom: 8px;
+}
+
+.loan-panel .action-link {
+    margin-left: 8px;
+}

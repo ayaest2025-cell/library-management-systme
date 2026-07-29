@@ -126,3 +126,42 @@ function registerUser(array $input): array
         'role' => $role,
     ];
 }
+
+function getUserProfile(int $userId): array
+{
+    $pdo = getPdo();
+    $stmt = $pdo->prepare('SELECT id, full_name, email, role, first_name, last_name, phone, address, profile_image FROM users WHERE id = ? LIMIT 1');
+    $stmt->execute([$userId]);
+    $user = $stmt->fetch();
+
+    if (!$user) {
+        throw new ApiException('User not found.', 404);
+    }
+
+    return $user;
+}
+
+function updateUserProfile(int $userId, array $input): array
+{
+    $pdo = getPdo();
+    $allowed = ['first_name', 'last_name', 'phone', 'address', 'profile_image'];
+    $updates = [];
+    $values = [];
+
+    foreach ($allowed as $field) {
+        if (array_key_exists($field, $input)) {
+            $updates[] = "$field = ?";
+            $values[] = trim((string) $input[$field]);
+        }
+    }
+
+    if ($updates === []) {
+        throw new ApiException('No profile fields provided.', 400);
+    }
+
+    $values[] = $userId;
+    $stmt = $pdo->prepare('UPDATE users SET ' . implode(', ', $updates) . ' WHERE id = ?');
+    $stmt->execute($values);
+
+    return getUserProfile($userId);
+}

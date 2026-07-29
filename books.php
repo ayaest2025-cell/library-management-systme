@@ -64,6 +64,24 @@ $books = $result->fetch_all(MYSQLI_ASSOC);
                 <button type="submit">Search</button>
             </form>
 
+            <div class="loan-panel">
+                <h3>Active Loans</h3>
+                <ul>
+                    <?php
+                    $activeBooks = array_filter($books, function ($book) {
+                        return ($book['status'] ?? '') === 'Borrowed';
+                    });
+                    if (!empty($activeBooks)) {
+                        foreach ($activeBooks as $book) {
+                            echo '<li>' . htmlspecialchars($book['title']) . ' — Borrowed by ' . htmlspecialchars($book['borrower_name'] ?? 'Member') . ' <a href="return.php?book_id=' . (int) $book['id'] . '" class="action-link">Return</a></li>';
+                        }
+                    } else {
+                        echo '<li>No active loans.</li>';
+                    }
+                    ?>
+                </ul>
+            </div>
+
             <?php if (!empty($books)): ?>
                 <table class="data-table">
                     <thead>
@@ -99,6 +117,11 @@ $books = $result->fetch_all(MYSQLI_ASSOC);
                                 <td class="actions">
                                     <a href="edit-book.php?id=<?php echo $book['id']; ?>" class="action-link">Edit</a>
                                     <a href="delete-book.php?id=<?php echo $book['id']; ?>" class="action-link danger" onclick="return confirm('Delete this book?')">Delete</a>
+                                    <?php if ($book['status'] === 'Available'): ?>
+                                        <a href="borrow.php?book_id=<?php echo $book['id']; ?>" class="action-link">Borrow</a>
+                                    <?php else: ?>
+                                        <span class="muted-text">Unavailable</span>
+                                    <?php endif; ?>
                                 </td>
                             </tr>
                         <?php endforeach; ?>
