@@ -15,7 +15,7 @@ if ($bookId <= 0) {
     exit();
 }
 
-$stmt = $conn->prepare('SELECT id, title, status, borrower_name FROM books WHERE id = ?');
+$stmt = $conn->prepare('SELECT id, title, available_copies FROM books WHERE id = ?');
 $stmt->bind_param('i', $bookId);
 $stmt->execute();
 $book = $stmt->get_result()->fetch_assoc();
@@ -26,16 +26,15 @@ if (!$book) {
     exit();
 }
 
-if ($book['status'] !== 'Available') {
+if ((int) $book['available_copies'] < 1) {
     $_SESSION['flash'] = ['type' => 'danger', 'message' => 'This book is not available for borrowing.'];
     header('Location: books.php');
     exit();
 }
 
-$stmt = $conn->prepare('UPDATE books SET status = ?, borrower_name = ? WHERE id = ?');
-$borrowedStatus = 'Borrowed';
+$stmt = $conn->prepare("UPDATE books SET status = CASE WHEN available_copies = 1 THEN 'Borrowed' ELSE 'Available' END, available_copies = available_copies - 1, borrower_name = ?, borrowed_at = NOW() WHERE id = ? AND available_copies > 0");
 $borrowerName = $_SESSION['user_name'] ?? 'Member';
-$stmt->bind_param('ssi', $borrowedStatus, $borrowerName, $bookId);
+$stmt->bind_param('si', $borrowerName, $bookId);
 $stmt->execute();
 
 $_SESSION['flash'] = ['type' => 'success', 'message' => 'Book borrowed successfully.'];

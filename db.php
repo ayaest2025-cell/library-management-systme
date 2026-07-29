@@ -64,9 +64,15 @@ function ensureBooksTable(mysqli $conn): void
     $conn->query("CREATE TABLE IF NOT EXISTS books (
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(150) NOT NULL,
+        isbn VARCHAR(20) DEFAULT NULL,
         author VARCHAR(150) NOT NULL,
+        publisher VARCHAR(150) DEFAULT NULL,
+        publication_year SMALLINT DEFAULT NULL,
         category VARCHAR(100) NOT NULL,
         cover_image VARCHAR(255) DEFAULT NULL,
+        quantity INT UNSIGNED NOT NULL DEFAULT 1,
+        available_copies INT UNSIGNED NOT NULL DEFAULT 1,
+        description TEXT DEFAULT NULL,
         status VARCHAR(20) NOT NULL DEFAULT 'Available',
         borrower_name VARCHAR(150) DEFAULT NULL,
         borrowed_at TIMESTAMP NULL DEFAULT NULL,
@@ -74,7 +80,13 @@ function ensureBooksTable(mysqli $conn): void
     )");
 
     $columns = [
+        'isbn' => 'VARCHAR(20) DEFAULT NULL',
+        'publisher' => 'VARCHAR(150) DEFAULT NULL',
+        'publication_year' => 'SMALLINT DEFAULT NULL',
         'cover_image' => 'VARCHAR(255) DEFAULT NULL',
+        'quantity' => 'INT UNSIGNED NOT NULL DEFAULT 1',
+        'available_copies' => 'INT UNSIGNED NOT NULL DEFAULT 1',
+        'description' => 'TEXT DEFAULT NULL',
         'status' => "VARCHAR(20) NOT NULL DEFAULT 'Available'",
         'borrower_name' => 'VARCHAR(150) DEFAULT NULL',
         'borrowed_at' => 'TIMESTAMP NULL DEFAULT NULL',
@@ -85,6 +97,10 @@ function ensureBooksTable(mysqli $conn): void
             $conn->query("ALTER TABLE books ADD COLUMN $column $definition");
         }
     }
+
+    // Bring records created before copy tracking into the new model.
+    $conn->query("UPDATE books SET quantity = 1 WHERE quantity IS NULL OR quantity < 1");
+    $conn->query("UPDATE books SET available_copies = CASE WHEN status = 'Borrowed' THEN 0 ELSE quantity END WHERE available_copies IS NULL OR available_copies > quantity OR (status = 'Borrowed' AND available_copies = quantity)");
 }
 
 function ensureMembersTable(mysqli $conn): void
@@ -181,10 +197,7 @@ function ensureDefaultAdmin(mysqli $conn): void
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        $user = $result->fetch_assoc();
-        $updateStmt = $conn->prepare('UPDATE users SET full_name = ?, password = ?, password_hash = ?, role = ? WHERE id = ?');
-        $updateStmt->bind_param('ssssi', $fullName, $hashedPassword, $hashedPassword, $role, $user['id']);
-        $updateStmt->execute();
+        // Existing administrators retain their own credentials.
         return;
     }
 
@@ -198,6 +211,52 @@ function columnExists(mysqli $conn, string $table, string $column): bool
     $result = $conn->query("SHOW COLUMNS FROM `$table` LIKE '$column'");
 
     return $result && $result->num_rows > 0;
+}
+
+function uploadBookCover(array $file, ?string &$error): ?string
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || ($file['size'] ?? 0) > 5 * 1024 * 1024) {
+        $error = 'Upload a valid cover image smaller than 5 MB.';
+        return null;
+    }
+
+    $imageInfo = @getimagesize($file['tmp_name']);
+    $allowedTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_GIF => 'gif', IMAGETYPE_WEBP => 'webp'];
+    if ($imageInfo === false || !isset($allowedTypes[$imageInfo[2]])) {
+        $error = 'Only JPG, PNG, GIF, and WEBP images are allowed.';
+        return null;
+    }
+
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+        $error = 'Unable to create the cover upload folder.';
+        return null;
+    }
+
+    $fileName = bin2hex(random_bytes(16)) . '.' . $allowedTypes[$imageInfo[2]];
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $fileName)) {
+        $error = 'Unable to upload the cover image.';
+        return null;
+    }
+
+    return 'uploads/' . $fileName;
+}
+
+/** Remove a cover only when it is an application-managed upload. */
+function deleteBookCover(?string $coverImage): void
+{
+    if (!$coverImage || !preg_match('#^uploads/[a-f0-9]{32}\.(jpg|png|gif|webp)$#', $coverImage)) {
+        return;
+    }
+
+    $path = __DIR__ . '/' . $coverImage;
+    if (is_file($path)) {
+        unlink($path);
+    }
 }
 
 function getTableColumns(mysqli $conn, string $table): array
@@ -217,7 +276,7 @@ function getTableColumns(mysqli $conn, string $table): array
 function getUserByEmail(mysqli $conn, string $email): ?array
 {
     $columns = getTableColumns($conn, 'users');
-    $select = ['id', 'email'];
+    $select = ['id', 'email', 'role'];
 
     if (in_array('name', $columns, true)) {
         $select[] = 'name';
@@ -241,6 +300,23 @@ function getUserByEmail(mysqli $conn, string $email): ?array
     $result = $stmt->get_result();
 
     return $result->num_rows === 1 ? $result->fetch_assoc() : null;
+}
+
+/** Return a per-session CSRF token for state-changing forms. */
+function csrfToken(): string
+{
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+
+    return $_SESSION['csrf_token'];
+}
+
+function isValidCsrfToken(?string $token): bool
+{
+    return is_string($token)
+        && isset($_SESSION['csrf_token'])
+        && hash_equals($_SESSION['csrf_token'], $token);
 }
 
 function getUserProfileData(mysqli $conn, int $userId): ?array

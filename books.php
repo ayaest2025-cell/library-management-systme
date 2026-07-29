@@ -1,136 +1,16 @@
 <?php
-session_start();
-
-if (!isset($_SESSION['user_id'])) {
-    header('Location: login.php');
-    exit();
-}
-
-include('db.php');
-
-$pageTitle = "Books";
-$flash = $_SESSION['flash'] ?? null;
-unset($_SESSION['flash']);
-
-$search = trim($_GET['search'] ?? '');
-
-$sql = "SELECT id, title, author, category, cover_image, status, borrower_name, created_at FROM books";
-$params = [];
-$types = "";
-
-if ($search !== '') {
-    $sql .= " WHERE title LIKE ? OR author LIKE ?";
-    $like = "%{$search}%";
-    $params = [$like, $like];
-    $types = "ss";
-}
-
-$sql .= " ORDER BY id DESC";
-
-$stmt = $conn->prepare($sql);
-if ($params !== []) {
-    $stmt->bind_param($types, ...$params);
-}
-$stmt->execute();
-$result = $stmt->get_result();
-$books = $result->fetch_all(MYSQLI_ASSOC);
+session_start(); if (!isset($_SESSION['user_id'])) { header('Location: login.php'); exit(); } include 'db.php';
+$flash = $_SESSION['flash'] ?? null; unset($_SESSION['flash']);
+$search = trim($_GET['search'] ?? ''); $selectedCategory = trim($_GET['category'] ?? '');
+$categoriesResult = $conn->query("SELECT DISTINCT category FROM books WHERE TRIM(category) <> '' ORDER BY category");
+$categories = $categoriesResult ? $categoriesResult->fetch_all(MYSQLI_ASSOC) : [];
+$sql = 'SELECT id, title, isbn, author, publisher, publication_year, category, cover_image, quantity, available_copies, description FROM books'; $where=[]; $params=[]; $types='';
+if ($search !== '') { $where[] = '(title LIKE ? OR isbn LIKE ? OR author LIKE ? OR publisher LIKE ?)'; $like="%$search%"; array_push($params, $like, $like, $like, $like); $types .= 'ssss'; }
+if ($selectedCategory !== '') { $where[] = 'category = ?'; $params[]=$selectedCategory; $types.='s'; }
+if ($where) $sql .= ' WHERE '.implode(' AND ', $where); $sql .= ' ORDER BY id DESC';
+$stmt=$conn->prepare($sql); if ($params) $stmt->bind_param($types, ...$params); $stmt->execute(); $books=$stmt->get_result()->fetch_all(MYSQLI_ASSOC);
 ?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo $pageTitle; ?></title>
-    <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-    <?php include 'includes/nav.php'; ?>
-
-    <header>
-        <h1>Library Management System</h1>
-        <p>Browse all books in the collection.</p>
-    </header>
-
-    <main>
-        <section class="welcome main-container">
-            <h2>All Books</h2>
-
-            <?php if ($flash): ?>
-                <div class="flash <?php echo htmlspecialchars($flash['type']); ?>"><?php echo htmlspecialchars($flash['message']); ?></div>
-            <?php endif; ?>
-
-            <form method="get" action="books.php" class="search-form">
-                <input type="text" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search by title or author">
-                <button type="submit">Search</button>
-            </form>
-
-            <div class="loan-panel">
-                <h3>Active Loans</h3>
-                <ul>
-                    <?php
-                    $activeBooks = array_filter($books, function ($book) {
-                        return ($book['status'] ?? '') === 'Borrowed';
-                    });
-                    if (!empty($activeBooks)) {
-                        foreach ($activeBooks as $book) {
-                            echo '<li>' . htmlspecialchars($book['title']) . ' — Borrowed by ' . htmlspecialchars($book['borrower_name'] ?? 'Member') . ' <a href="return.php?book_id=' . (int) $book['id'] . '" class="action-link">Return</a></li>';
-                        }
-                    } else {
-                        echo '<li>No active loans.</li>';
-                    }
-                    ?>
-                </ul>
-            </div>
-
-            <?php if (!empty($books)): ?>
-                <table class="data-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>Cover</th>
-                            <th>Title</th>
-                            <th>Author</th>
-                            <th>Category</th>
-                            <th>Status</th>
-                            <th>Borrower</th>
-                            <th>Created At</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($books as $book): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($book['id']); ?></td>
-                                <td>
-                                    <?php if (!empty($book['cover_image'])): ?>
-                                        <img src="<?php echo htmlspecialchars($book['cover_image']); ?>" alt="Cover" class="book-cover-thumb">
-                                    <?php else: ?>
-                                        <span class="muted-text">No cover</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td><?php echo htmlspecialchars($book['title']); ?></td>
-                                <td><?php echo htmlspecialchars($book['author']); ?></td>
-                                <td><?php echo htmlspecialchars($book['category']); ?></td>
-                                <td><?php echo htmlspecialchars($book['status']); ?></td>
-                                <td><?php echo htmlspecialchars($book['borrower_name'] ?? '—'); ?></td>
-                                <td><?php echo htmlspecialchars($book['created_at']); ?></td>
-                                <td class="actions">
-                                    <a href="edit-book.php?id=<?php echo $book['id']; ?>" class="action-link">Edit</a>
-                                    <a href="delete-book.php?id=<?php echo $book['id']; ?>" class="action-link danger" onclick="return confirm('Delete this book?')">Delete</a>
-                                    <?php if ($book['status'] === 'Available'): ?>
-                                        <a href="borrow.php?book_id=<?php echo $book['id']; ?>" class="action-link">Borrow</a>
-                                    <?php else: ?>
-                                        <span class="muted-text">Unavailable</span>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            <?php else: ?>
-                <p>No books found.</p>
-            <?php endif; ?>
-        </section>
-    </main>
-</body>
-</html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Books</title><link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"><link rel="stylesheet" href="styles.css"></head>
+<body><?php include 'includes/nav.php'; ?><main class="container py-4"><section class="card shadow-sm"><div class="card-body p-4"><div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-4"><div><h1 class="h3 mb-1">Books</h1><p class="text-muted mb-0">Manage titles, cover images, and available inventory.</p></div><a href="add-book.php" class="btn btn-primary align-self-md-center">Add Book</a></div><?php if ($flash): ?><div class="alert alert-<?php echo $flash['type']==='success'?'success':'danger'; ?>"><?php echo htmlspecialchars($flash['message']); ?></div><?php endif; ?>
+<form class="row g-2 mb-4"><div class="col-md-6"><input class="form-control" name="search" value="<?php echo htmlspecialchars($search); ?>" placeholder="Search title, ISBN, author, or publisher"></div><div class="col-md-4"><select class="form-select" name="category"><option value="">All categories</option><?php foreach($categories as $category): ?><option value="<?php echo htmlspecialchars($category['category']); ?>" <?php echo $selectedCategory===$category['category']?'selected':''; ?>><?php echo htmlspecialchars($category['category']); ?></option><?php endforeach; ?></select></div><div class="col-md-2 d-grid"><button class="btn btn-outline-secondary">Filter</button></div></form>
+<div class="table-responsive"><?php if ($books): ?><table class="table table-hover align-middle"><thead><tr><th>Cover</th><th>Book</th><th>Category</th><th>Published</th><th>Copies</th><th>Actions</th></tr></thead><tbody><?php foreach($books as $book): ?><tr><td><?php if($book['cover_image']): ?><img src="<?php echo htmlspecialchars($book['cover_image']); ?>" class="book-cover-thumb" alt="Cover of <?php echo htmlspecialchars($book['title']); ?>"><?php else: ?><span class="text-muted small">No cover</span><?php endif; ?></td><td><strong><?php echo htmlspecialchars($book['title']); ?></strong><div class="small text-muted"><?php echo htmlspecialchars($book['author']); ?><?php if($book['isbn']): ?> &middot; ISBN <?php echo htmlspecialchars($book['isbn']); ?><?php endif; ?><?php if($book['publisher']): ?><br><?php echo htmlspecialchars($book['publisher']); ?><?php endif; ?></div><?php if($book['description']): ?><div class="small text-muted mt-1"><?php echo htmlspecialchars($book['description']); ?></div><?php endif; ?></td><td><?php echo htmlspecialchars($book['category']); ?></td><td><?php echo $book['publication_year'] ? (int)$book['publication_year'] : '&mdash;'; ?></td><td><span class="badge text-bg-<?php echo $book['available_copies']>0?'success':'secondary'; ?>"><?php echo (int)$book['available_copies']; ?> / <?php echo (int)$book['quantity']; ?> available</span></td><td><div class="d-flex gap-1 flex-wrap"><a class="btn btn-outline-primary btn-sm" href="edit-book.php?id=<?php echo (int)$book['id']; ?>">Edit</a><?php if($book['available_copies']>0): ?><a class="btn btn-outline-success btn-sm" href="borrow.php?book_id=<?php echo (int)$book['id']; ?>">Borrow</a><?php elseif($book['available_copies']<$book['quantity']): ?><a class="btn btn-outline-secondary btn-sm" href="return.php?book_id=<?php echo (int)$book['id']; ?>">Return</a><?php endif; ?><form method="post" action="delete-book.php" class="d-inline" onsubmit="return confirm('Delete this book?');"><input type="hidden" name="id" value="<?php echo (int)$book['id']; ?>"><button class="btn btn-outline-danger btn-sm" type="submit">Delete</button></form></div></td></tr><?php endforeach; ?></tbody></table><?php else: ?><div class="alert alert-light text-center mb-0">No books found.</div><?php endif; ?></div></div></section></main></body></html>

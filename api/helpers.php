@@ -56,3 +56,50 @@ function getRequestPath(): string
 
     return $path;
 }
+
+/** Upload a book cover image from a multipart upload. Returns the relative path or null. */
+function uploadBookCover(array $file, ?string &$error): ?string
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        return null;
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || ($file['size'] ?? 0) > 5 * 1024 * 1024) {
+        $error = 'Upload a valid cover image smaller than 5 MB.';
+        return null;
+    }
+
+    $imageInfo = @getimagesize($file['tmp_name']);
+    $allowedTypes = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_GIF => 'gif', IMAGETYPE_WEBP => 'webp'];
+    if ($imageInfo === false || !isset($allowedTypes[$imageInfo[2]])) {
+        $error = 'Only JPG, PNG, GIF, and WEBP images are allowed.';
+        return null;
+    }
+
+    $uploadDir = __DIR__ . '/uploads';
+    if (!is_dir($uploadDir) && !mkdir($uploadDir, 0755, true)) {
+        $error = 'Unable to create the cover upload folder.';
+        return null;
+    }
+
+    $fileName = bin2hex(random_bytes(16)) . '.' . $allowedTypes[$imageInfo[2]];
+    if (!move_uploaded_file($file['tmp_name'], $uploadDir . '/' . $fileName)) {
+        $error = 'Unable to upload the cover image.';
+        return null;
+    }
+
+    return 'uploads/' . $fileName;
+}
+
+/** Remove a cover only when it is an application-managed upload. */
+function deleteBookCover(?string $coverImage): void
+{
+    if (!$coverImage || !preg_match('#^uploads/[a-f0-9]{32}\.(jpg|png|gif|webp)$#', $coverImage)) {
+        return;
+    }
+
+    $path = __DIR__ . '/' . $coverImage;
+    if (is_file($path)) {
+        unlink($path);
+    }
+}

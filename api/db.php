@@ -67,10 +67,18 @@ function initializeSchema(PDO $pdo): void
     $pdo->exec("CREATE TABLE IF NOT EXISTS books (
         id INT AUTO_INCREMENT PRIMARY KEY,
         title VARCHAR(150) NOT NULL,
+        isbn VARCHAR(20) DEFAULT NULL,
         author VARCHAR(150) NOT NULL,
+        publisher VARCHAR(150) DEFAULT NULL,
+        publication_year SMALLINT DEFAULT NULL,
         category VARCHAR(100) NOT NULL,
-        available_copies INT NOT NULL DEFAULT 1,
-        isbn VARCHAR(100) DEFAULT NULL,
+        cover_image VARCHAR(255) DEFAULT NULL,
+        quantity INT UNSIGNED NOT NULL DEFAULT 1,
+        available_copies INT UNSIGNED NOT NULL DEFAULT 1,
+        description TEXT DEFAULT NULL,
+        status VARCHAR(20) NOT NULL DEFAULT 'Available',
+        borrower_name VARCHAR(150) DEFAULT NULL,
+        borrowed_at TIMESTAMP NULL DEFAULT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )");
 

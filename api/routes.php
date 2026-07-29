@@ -71,7 +71,7 @@ function handleRoute(string $path, string $method): void
 
     if ($path === 'books' && $method === 'GET') {
         authenticate(['admin', 'borrower']);
-        $stmt = $pdo->query('SELECT id, title, author, category, available_copies, isbn, created_at FROM books ORDER BY id DESC');
+        $stmt = $pdo->query('SELECT id, title, isbn, author, publisher, publication_year, category, cover_image, quantity, available_copies, description, status, borrower_name, borrowed_at, created_at FROM books ORDER BY id DESC');
         sendJson(['success' => true, 'data' => $stmt->fetchAll()]);
         return;
     }
@@ -80,17 +80,27 @@ function handleRoute(string $path, string $method): void
         authenticate(['admin']);
         $body = readJsonBody();
         $title = trim((string) ($body['title'] ?? ''));
-        $author = trim((string) ($body['author'] ?? ''));
-        $category = trim((string) ($body['category'] ?? ''));
-        $availableCopies = max(0, (int) ($body['available_copies'] ?? 1));
         $isbn = trim((string) ($body['isbn'] ?? ''));
+        $author = trim((string) ($body['author'] ?? ''));
+        $publisher = trim((string) ($body['publisher'] ?? ''));
+        $publicationYear = isset($body['publication_year']) ? (int) $body['publication_year'] : null;
+        $category = trim((string) ($body['category'] ?? ''));
+        $quantity = max(1, (int) ($body['quantity'] ?? 1));
+        $availableCopies = max(0, (int) ($body['available_copies'] ?? $quantity));
+        $description = trim((string) ($body['description'] ?? ''));
+        $coverImage = trim((string) ($body['cover_image'] ?? ''));
+        $status = $availableCopies > 0 ? 'Available' : 'Borrowed';
 
         if ($title === '' || $author === '' || $category === '') {
             throw new ApiException('title, author, and category are required.', 400);
         }
 
-        $stmt = $pdo->prepare('INSERT INTO books (title, author, category, available_copies, isbn) VALUES (?, ?, ?, ?, ?)');
-        $stmt->execute([$title, $author, $category, $availableCopies, $isbn]);
+        if ($publicationYear !== null && ($publicationYear < 1000 || $publicationYear > (int) date('Y'))) {
+            throw new ApiException('Invalid publication_year.', 400);
+        }
+
+        $stmt = $pdo->prepare('INSERT INTO books (title, isbn, author, publisher, publication_year, category, cover_image, quantity, available_copies, description, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+        $stmt->execute([$title, $isbn ?: null, $author, $publisher ?: null, $publicationYear, $category, $coverImage ?: null, $quantity, $availableCopies, $description ?: null, $status]);
 
         sendJson(['success' => true, 'message' => 'Book added successfully.', 'data' => ['id' => (int) $pdo->lastInsertId()]], 201);
         return;
