@@ -1,18 +1,22 @@
-# Library Management System - Complete Modules
+# Return Book Module Enhancement
 
 ## Completed
 
-### Books Module Upgrade
-- [x] Updated `api/db.php` - PDO schema with all book fields (isbn, author, publisher, publication_year, cover_image, quantity, available_copies, description, status)
-- [x] Updated `api/routes.php` - Books GET returns all fields; POST accepts all fields with validation
-- [x] Updated `api/helpers.php` - Added uploadBookCover/deleteBookCover functions
-- [x] Updated `api/database_updates.sql` - Full books schema
+### Step 1: Add Status Summary Stats ✅
+- [x] Added PHP queries to calculate: currently borrowed count, returned today count, overdue count
+- [x] Added a status summary card bar at the top of the page with color-coded cards
 
-### Professional Borrow Book Module
-- [x] Created `borrow.php` - Full borrow form with member/book selection, dates, validation, transactions
-- [x] Created `return.php` - Professional return management with overdue detection, history
-- [x] Updated `db.php` - Added `ensureBorrowTransactionsTable()` with foreign keys
-- [x] Updated `api/database_updates.sql` - Added borrow_transactions table
-- [x] Updated `includes/nav.php` - Added Borrow and Return nav links
-- [x] Updated `books.php` - Action buttons linked to new borrow page
+### Step 2: Enhance Borrow History Section ✅
+- [x] Replaced "Recently Returned (last 5)" with full Borrow History section
+- [x] Added search by member name, book title, or status
+- [x] Added dropdown filter by status (All, Borrowed, Returned)
+- [x] Added pagination with First/Prev/Next/Last navigation
+- [x] Show color-coded status badges (Overdue, Borrowed, Returned, Returned Late)
+- [x] Shows total records count
 
+### Step 3: Verify Existing Features ✅
+- [x] Return processing logic (POST handler) untouched
+- [x] Currently Borrowed Books table untouched
+- [x] Flash/error message display untouched
+- [x] Recently Returned section preserved
+- [x] No other files modified
